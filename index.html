@@ -20,9 +20,15 @@
   button {
     padding: 8px 16px;
     cursor: pointer;
+    margin-top: 10px;
   }
   #qrCode {
     margin-top: 20px;
+  }
+  #copyMsg {
+    color: green;
+    margin-top: 10px;
+    font-weight: bold;
   }
 </style>
 </head>
@@ -44,6 +50,8 @@
   <br />
   <button onclick="generateQR()">Generar Código QR</button>
   <div id="qrCode"></div>
+  <button id="copyButton" style="display:none;" onclick="copyQRCode()">Copiar enlace QR</button>
+  <div id="copyMsg"></div>
 </div>
 
 <!-- Librería QR -->
@@ -57,16 +65,19 @@
   const claveCorrecta = '18712529';
   let imageURL = '';
 
-  // Detectar 5 toques para mostrar formulario
-  document.body.addEventListener('touchstart', () => {
+  function countTap() {
     tapCount++;
-    if(tapCount === requiredTaps){
+    if (tapCount === requiredTaps) {
       accessForm.style.display = 'block';
       tapCount = 0;
     }
-  });
+  }
 
-  // Validar clave
+  // Detectar 5 toques (pantalla táctil)
+  document.body.addEventListener('touchstart', countTap);
+  // Detectar 5 clics (ratón)
+  document.body.addEventListener('click', countTap);
+
   function validateClave(){
     const claveIngresada = document.getElementById('clave').value;
     if(claveIngresada === claveCorrecta){
@@ -78,7 +89,6 @@
     }
   }
 
-  // Subir imagen local y simular enlace (sin servidor real)
   document.getElementById('fileInput').addEventListener('change', function(event){
     const file = event.target.files[0];
     if(file){
@@ -87,23 +97,36 @@
     }
   });
 
-  // Generar código QR para la imagen local
   function generateQR(){
     if(!imageURL){
       alert('Seleccione una imagen primero');
       return;
     }
-    // Limpiar QR anterior
     const qrDiv = document.getElementById('qrCode');
     qrDiv.innerHTML = '';
     QRCode.toCanvas(imageURL, { width: 200 }, function (error, canvas) {
-      if (error) alert('Error generando QR');
-      else {
-        qrDiv.appendChild(canvas);
+      if (error) {
+        alert('Error generando QR');
+        document.getElementById('copyButton').style.display = 'none';
+        return;
       }
+      qrDiv.appendChild(canvas);
+      document.getElementById('copyButton').style.display = 'inline-block';
+      document.getElementById('copyMsg').textContent = '';
+    });
+  }
+
+  function copyQRCode(){
+    if (!imageURL) {
+      alert('No hay enlace para copiar');
+      return;
+    }
+    navigator.clipboard.writeText(imageURL).then(() => {
+      document.getElementById('copyMsg').textContent = 'Enlace copiado al portapapeles';
+    }).catch(() => {
+      alert('Error al copiar');
     });
   }
 </script>
 </body>
 </html>
-

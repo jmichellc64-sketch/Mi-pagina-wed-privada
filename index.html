@@ -8,7 +8,7 @@
   body, html {
     margin: 0; padding: 0; height: 100%; background: white; display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif;
   }
-  #accessForm, #uploadSection {
+  #uploadSection {
     display: none;
     text-align: center;
   }
@@ -25,6 +25,9 @@
   #qrCode {
     margin-top: 20px;
   }
+  #errorMsg {
+    color: red;
+  }
   #copyMsg {
     color: green;
     margin-top: 10px;
@@ -35,12 +38,12 @@
 <body>
 
 <!-- Acceso -->
-<div id="accessForm">
+<div id="accessForm" style="text-align: center;">
   <h2>Ingrese la clave</h2>
   <input type="password" id="clave" placeholder="Clave" autocomplete="off" />
   <br />
   <button onclick="validateClave()">Entrar</button>
-  <p id="errorMsg" style="color:red;"></p>
+  <p id="errorMsg"></p>
 </div>
 
 <!-- Subir imagen y generar QR -->
@@ -54,29 +57,13 @@
   <div id="copyMsg"></div>
 </div>
 
-<!-- Librería QR -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script>
-  let tapCount = 0;
-  const requiredTaps = 5;
   const accessForm = document.getElementById('accessForm');
   const uploadSection = document.getElementById('uploadSection');
   const errorMsg = document.getElementById('errorMsg');
   const claveCorrecta = '18712529';
   let imageURL = '';
-
-  function countTap() {
-    tapCount++;
-    if (tapCount === requiredTaps) {
-      accessForm.style.display = 'block';
-      tapCount = 0;
-    }
-  }
-
-  // Detectar 5 toques (pantalla táctil)
-  document.body.addEventListener('touchstart', countTap);
-  // Detectar 5 clics (ratón)
-  document.body.addEventListener('click', countTap);
 
   function validateClave(){
     const claveIngresada = document.getElementById('clave').value;
@@ -130,3 +117,4 @@
 </script>
 </body>
 </html>
+

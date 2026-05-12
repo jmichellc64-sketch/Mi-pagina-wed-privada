@@ -1,90 +1,109 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rifconsultacertificado</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        body { font-family: sans-serif; background: white; margin: 0; text-align: center; }
-        img { width: 100%; height: auto; display: block; }
-        .hidden { display: none; }
-        #adminPanel { position: fixed; bottom: 0; width: 100%; background: #eee; padding: 20px; border-top: 2px solid #ccc; z-index: 100; }
-        input, button { padding: 12px; margin: 5px; border-radius: 8px; border: 1px solid #999; }
-        button { background: black; color: white; cursor: pointer; font-weight: bold; }
-        .trigger { height: 50px; width: 100%; position: absolute; top: 0; cursor: pointer; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Acceso Privado</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%; background: white; display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif;
+  }
+  #accessForm, #uploadSection {
+    display: none;
+    text-align: center;
+  }
+  input[type="password"], input[type="file"] {
+    margin: 10px 0;
+    padding: 8px;
+    width: 200px;
+  }
+  button {
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  #qrCode {
+    margin-top: 20px;
+  }
+</style>
 </head>
 <body>
 
-    <!-- Zona invisible arriba para tu clave -->
-    <div class="trigger" onclick="abrirAdmin()"></div>
+<!-- Acceso -->
+<div id="accessForm">
+  <h2>Ingrese la clave</h2>
+  <input type="password" id="clave" placeholder="Clave" autocomplete="off" />
+  <br />
+  <button onclick="validateClave()">Entrar</button>
+  <p id="errorMsg" style="color:red;"></p>
+</div>
 
-    <!-- LO QUE VE EL PÚBLICO -->
-    <div id="visor">
-        <div id="mensaje" style="padding: 50px; color: gray;">
-            Esperando carga de certificado...
-        </div>
-    </div>
+<!-- Subir imagen y generar QR -->
+<div id="uploadSection">
+  <h2>Subir imagen</h2>
+  <input type="file" id="fileInput" accept="image/*" />
+  <br />
+  <button onclick="generateQR()">Generar Código QR</button>
+  <div id="qrCode"></div>
+</div>
 
-    <!-- PANEL PARA TI -->
-    <div id="panel" class="hidden">
-        <div id="adminPanel">
-            <input type="password" id="miClave" placeholder="Tu clave: 18712529">
-            <button onclick="entrar()">Entrar</button>
-            
-            <div id="controles" class="hidden">
-                <p>Selecciona la foto de tu RIF:</p>
-                <input type="file" id="inputFoto" accept="image/*">
-                <button onclick="procesar()">Guardar y Mostrar</button>
-                <br>
-                <button onclick="generarQR()" style="background: #0056b3;">Generar QR</button>
-                <div id="qrcode" style="display:flex; justify-content:center; margin-top:10px;"></div>
-            </div>
-            <button onclick="cerrar()">Cerrar</button>
-        </div>
-    </div>
+<!-- Librería QR -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script>
+  let tapCount = 0;
+  const requiredTaps = 5;
+  const accessForm = document.getElementById('accessForm');
+  const uploadSection = document.getElementById('uploadSection');
+  const errorMsg = document.getElementById('errorMsg');
+  const claveCorrecta = '18712529';
+  let imageURL = '';
 
-    <script>
-        const CLAVE_CORRECTA = "18712529";
+  // Detectar 5 toques para mostrar formulario
+  document.body.addEventListener('touchstart', () => {
+    tapCount++;
+    if(tapCount === requiredTaps){
+      accessForm.style.display = 'block';
+      tapCount = 0;
+    }
+  });
 
-        // Al abrir la web, busca si ya guardaste una foto
-        window.onload = function() {
-            const fotoGuardada = localStorage.getItem('mi_rif_foto');
-            if (fotoGuardada) {
-                document.getElementById('visor').innerHTML = '<img src="' + fotoGuardada + '">';
-            }
-        };
+  // Validar clave
+  function validateClave(){
+    const claveIngresada = document.getElementById('clave').value;
+    if(claveIngresada === claveCorrecta){
+      errorMsg.textContent = '';
+      accessForm.style.display = 'none';
+      uploadSection.style.display = 'block';
+    } else {
+      errorMsg.textContent = 'Clave incorrecta';
+    }
+  }
 
-        function abrirAdmin() { document.getElementById('panel').classList.remove('hidden'); }
-        function cerrar() { document.getElementById('panel').classList.add('hidden'); }
+  // Subir imagen local y simular enlace (sin servidor real)
+  document.getElementById('fileInput').addEventListener('change', function(event){
+    const file = event.target.files[0];
+    if(file){
+      imageURL = URL.createObjectURL(file);
+      alert('Imagen lista para generar QR');
+    }
+  });
 
-        function entrar() {
-            if (document.getElementById('miClave').value === CLAVE_CORRECTA) {
-                document.getElementById('controles').classList.remove('hidden');
-            } else {
-                alert("Clave incorrecta");
-            }
-        }
-
-        function procesar() {
-            const archivo = document.getElementById('inputFoto').files[0];
-            if (archivo) {
-                const leer = new FileReader();
-                leer.onloadend = function() {
-                    // Esto guarda la foto en la memoria del navegador
-                    localStorage.setItem('mi_rif_foto', leer.result);
-                    alert("¡Guardado con éxito!");
-                    location.reload();
-                }
-                leer.readAsDataURL(archivo);
-            }
-        }
-
-        function generarQR() {
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), window.location.href);
-        }
-    </script>
+  // Generar código QR para la imagen local
+  function generateQR(){
+    if(!imageURL){
+      alert('Seleccione una imagen primero');
+      return;
+    }
+    // Limpiar QR anterior
+    const qrDiv = document.getElementById('qrCode');
+    qrDiv.innerHTML = '';
+    QRCode.toCanvas(imageURL, { width: 200 }, function (error, canvas) {
+      if (error) alert('Error generando QR');
+      else {
+        qrDiv.appendChild(canvas);
+      }
+    });
+  }
+</script>
 </body>
 </html>
+

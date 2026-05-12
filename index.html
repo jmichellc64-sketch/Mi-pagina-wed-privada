@@ -6,108 +6,84 @@
     <title>rifconsultacertificado</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: white; color: black; margin: 0; padding: 0; text-align: center; }
-        img { width: 100%; height: auto; display: block; margin: 0 auto; }
+        body { font-family: sans-serif; background: white; margin: 0; text-align: center; }
+        img { width: 100%; height: auto; display: block; }
         .hidden { display: none; }
-        
-        /* Zona secreta: Toca 5 veces el centro de la pantalla para que pida clave */
-        #zonaSecreta { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
-        /* Panel de administración */
-        #adminPanel { 
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; border: 2px solid black; padding: 20px; z-index: 100; border-radius: 15px;
-        }
-        input, button { margin: 10px; padding: 12px; border-radius: 8px; border: 1px solid #ccc; }
-        button { background: black; color: white; font-weight: bold; cursor: pointer; }
+        #adminPanel { position: fixed; bottom: 0; width: 100%; background: #eee; padding: 20px; border-top: 2px solid #ccc; z-index: 100; }
+        input, button { padding: 12px; margin: 5px; border-radius: 8px; border: 1px solid #999; }
+        button { background: black; color: white; cursor: pointer; font-weight: bold; }
+        .trigger { height: 50px; width: 100%; position: absolute; top: 0; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <!-- Esta zona detecta tus toques para abrir el panel -->
-    <div id="zonaSecreta" onclick="detectarToques()"></div>
+    <!-- Zona invisible arriba para tu clave -->
+    <div class="trigger" onclick="abrirAdmin()"></div>
 
-    <!-- VISTA PÚBLICA: Lo que ve CUALQUIERA que escanee el QR -->
-    <div id="vistaPublica">
-        <div id="contenedorRif">
-            <p style="padding-top: 50px; color: gray;">Cargando información...</p>
+    <!-- LO QUE VE EL PÚBLICO -->
+    <div id="visor">
+        <div id="mensaje" style="padding: 50px; color: gray;">
+            Esperando carga de certificado...
         </div>
     </div>
 
-    <!-- PANEL PRIVADO: Solo aparece con tus toques -->
-    <div id="adminPanel" class="hidden">
-        <h3>Panel de Control</h3>
-        <input type="password" id="claveInput" placeholder="Introduce clave">
-        <div id="herramientasAdmin" class="hidden">
-            <input type="file" id="subirImagen" accept="image/*">
-            <button onclick="guardarImagen()">1. Guardar Imagen</button>
-            <br>
-            <button onclick="generarQR()" style="background: #0056b3;">2. Generar Código QR</button>
-            <div id="areaQr" style="margin-top:10px; display:flex; justify-content:center;"></div>
+    <!-- PANEL PARA TI -->
+    <div id="panel" class="hidden">
+        <div id="adminPanel">
+            <input type="password" id="miClave" placeholder="Tu clave: 18712529">
+            <button onclick="entrar()">Entrar</button>
+            
+            <div id="controles" class="hidden">
+                <p>Selecciona la foto de tu RIF:</p>
+                <input type="file" id="inputFoto" accept="image/*">
+                <button onclick="procesar()">Guardar y Mostrar</button>
+                <br>
+                <button onclick="generarQR()" style="background: #0056b3;">Generar QR</button>
+                <div id="qrcode" style="display:flex; justify-content:center; margin-top:10px;"></div>
+            </div>
+            <button onclick="cerrar()">Cerrar</button>
         </div>
-        <button id="btnEntrar" onclick="validarClave()">Entrar</button>
-        <button onclick="cerrarAdmin()">Cerrar</button>
     </div>
 
     <script>
-        const MI_CLAVE = "18712529";
-        let contadorToques = 0;
+        const CLAVE_CORRECTA = "18712529";
 
-        // 1. CARGA AUTOMÁTICA (Para que el público vea la imagen de una vez)
+        // Al abrir la web, busca si ya guardaste una foto
         window.onload = function() {
-            const data = localStorage.getItem('imagen_rif_permanente');
-            if (data) {
-                document.getElementById('contenedorRif').innerHTML = '<img src="' + data + '">';
+            const fotoGuardada = localStorage.getItem('mi_rif_foto');
+            if (fotoGuardada) {
+                document.getElementById('visor').innerHTML = '<img src="' + fotoGuardada + '">';
             }
         };
 
-        // 2. SISTEMA DE ENTRADA PRIVADA (Solo para ti)
-        function detectarToques() {
-            contadorToques++;
-            if (contadorToques === 5) { // Toca 5 veces cualquier parte para abrir
-                document.getElementById('adminPanel').classList.remove('hidden');
-                contadorToques = 0;
-            }
-        }
+        function abrirAdmin() { document.getElementById('panel').classList.remove('hidden'); }
+        function cerrar() { document.getElementById('panel').classList.add('hidden'); }
 
-        function validarClave() {
-            if (document.getElementById('claveInput').value === MI_CLAVE) {
-                document.getElementById('herramientasAdmin').classList.remove('hidden');
-                document.getElementById('btnEntrar').classList.add('hidden');
-                document.getElementById('claveInput').classList.add('hidden');
+        function entrar() {
+            if (document.getElementById('miClave').value === CLAVE_CORRECTA) {
+                document.getElementById('controles').classList.remove('hidden');
             } else {
                 alert("Clave incorrecta");
             }
         }
 
-        function guardarImagen() {
-            const file = document.getElementById('subirImagen').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    localStorage.setItem('imagen_rif_permanente', reader.result);
-                    alert("Imagen guardada. Ahora el público la verá al escanear.");
+        function procesar() {
+            const archivo = document.getElementById('inputFoto').files[0];
+            if (archivo) {
+                const leer = new FileReader();
+                leer.onloadend = function() {
+                    // Esto guarda la foto en la memoria del navegador
+                    localStorage.setItem('mi_rif_foto', leer.result);
+                    alert("¡Guardado con éxito!");
                     location.reload();
                 }
-                reader.readAsDataURL(file);
+                leer.readAsDataURL(archivo);
             }
         }
 
         function generarQR() {
-            document.getElementById('areaQr').innerHTML = "";
-            new QRCode(document.getElementById("areaQr"), {
-                text: window.location.href,
-                width: 150,
-                height: 150
-            });
-        }
-
-        function cerrarAdmin() {
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('herramientasAdmin').classList.add('hidden');
-            document.getElementById('btnEntrar').classList.remove('hidden');
-            document.getElementById('claveInput').classList.remove('hidden');
-            document.getElementById('claveInput').value = "";
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), window.location.href);
         }
     </script>
 </body>

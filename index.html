@@ -4,87 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>rifconsultacertificado</title>
-    <!-- Librería para generar el QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: white; color: black; text-align: center; padding: 20px; }
+        body { font-family: sans-serif; background: white; color: black; margin: 0; padding: 0; text-align: center; }
+        img { width: 100%; height: auto; display: block; margin: 0 auto; }
         .hidden { display: none; }
-        input, button { margin: 10px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
-        button { background: black; color: white; cursor: pointer; font-weight: bold; }
-        img { max-width: 100%; height: auto; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
-        #qrcode { margin-top: 20px; display: flex; justify-content: center; }
-        .texto-principal { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+        
+        /* Zona secreta: Toca 5 veces el centro de la pantalla para que pida clave */
+        #zonaSecreta { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        /* Panel de administración */
+        #adminPanel { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; border: 2px solid black; padding: 20px; z-index: 100; border-radius: 15px;
+        }
+        input, button { margin: 10px; padding: 12px; border-radius: 8px; border: 1px solid #ccc; }
+        button { background: black; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA DE ACCESO: SOLO PARA TU USO -->
-    <div id="loginSection">
-        <div class="texto-principal">rifconsultacertificado</div>
-        <input type="password" id="passInput" placeholder="Ingrese clave">
-        <button onclick="checkPass()">Entrar</button>
+    <!-- Esta zona detecta tus toques para abrir el panel -->
+    <div id="zonaSecreta" onclick="detectarToques()"></div>
+
+    <!-- VISTA PÚBLICA: Lo que ve CUALQUIERA que escanee el QR -->
+    <div id="vistaPublica">
+        <div id="contenedorRif">
+            <p style="padding-top: 50px; color: gray;">Cargando información...</p>
+        </div>
     </div>
 
-    <!-- PANTALLA PRIVADA -->
-    <div id="mainSection" class="hidden">
-        <div class="texto-principal">rifconsultacertificado</div>
-        
-        <div id="uploadArea">
-            <input type="file" id="fileInput" accept="image/*">
-            <button onclick="saveRIF()">Guardar RIF en la Web</button>
+    <!-- PANEL PRIVADO: Solo aparece con tus toques -->
+    <div id="adminPanel" class="hidden">
+        <h3>Panel de Control</h3>
+        <input type="password" id="claveInput" placeholder="Introduce clave">
+        <div id="herramientasAdmin" class="hidden">
+            <input type="file" id="subirImagen" accept="image/*">
+            <button onclick="guardarImagen()">1. Guardar Imagen</button>
+            <br>
+            <button onclick="generarQR()" style="background: #0056b3;">2. Generar Código QR</button>
+            <div id="areaQr" style="margin-top:10px; display:flex; justify-content:center;"></div>
         </div>
-
-        <div id="displayArea">
-            <div id="imageContainer"></div>
-        </div>
-
-        <hr style="margin: 40px 0;">
-        <button onclick="generateQR()" style="background: #0056b3;">Generar Código QR</button>
-        <div id="qrcode"></div>
+        <button id="btnEntrar" onclick="validarClave()">Entrar</button>
+        <button onclick="cerrarAdmin()">Cerrar</button>
     </div>
 
     <script>
-        const CLAVE_ACCESO = "18712529";
+        const MI_CLAVE = "18712529";
+        let contadorToques = 0;
 
-        function checkPass() {
-            if (document.getElementById('passInput').value === CLAVE_ACCESO) {
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('mainSection').classList.remove('hidden');
-                loadRIF();
+        // 1. CARGA AUTOMÁTICA (Para que el público vea la imagen de una vez)
+        window.onload = function() {
+            const data = localStorage.getItem('imagen_rif_permanente');
+            if (data) {
+                document.getElementById('contenedorRif').innerHTML = '<img src="' + data + '">';
+            }
+        };
+
+        // 2. SISTEMA DE ENTRADA PRIVADA (Solo para ti)
+        function detectarToques() {
+            contadorToques++;
+            if (contadorToques === 5) { // Toca 5 veces cualquier parte para abrir
+                document.getElementById('adminPanel').classList.remove('hidden');
+                contadorToques = 0;
+            }
+        }
+
+        function validarClave() {
+            if (document.getElementById('claveInput').value === MI_CLAVE) {
+                document.getElementById('herramientasAdmin').classList.remove('hidden');
+                document.getElementById('btnEntrar').classList.add('hidden');
+                document.getElementById('claveInput').classList.add('hidden');
             } else {
                 alert("Clave incorrecta");
             }
         }
 
-        function saveRIF() {
-            const file = document.getElementById('fileInput').files[0];
+        function guardarImagen() {
+            const file = document.getElementById('subirImagen').files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onloadend = function() {
-                    // Guarda la imagen para que permanezca en la web
-                    localStorage.setItem('user_rif_image', reader.result);
-                    loadRIF();
+                    localStorage.setItem('imagen_rif_permanente', reader.result);
+                    alert("Imagen guardada. Ahora el público la verá al escanear.");
+                    location.reload();
                 }
                 reader.readAsDataURL(file);
             }
         }
 
-        function loadRIF() {
-            const savedImage = localStorage.getItem('user_rif_image');
-            const container = document.getElementById('imageContainer');
-            if (savedImage) {
-                container.innerHTML = '<img src="' + savedImage + '">';
-                document.getElementById('uploadArea').classList.add('hidden');
-            }
+        function generarQR() {
+            document.getElementById('areaQr').innerHTML = "";
+            new QRCode(document.getElementById("areaQr"), {
+                text: window.location.href,
+                width: 150,
+                height: 150
+            });
         }
 
-        function generateQR() {
-            document.getElementById('qrcode').innerHTML = ""; 
-            new QRCode(document.getElementById("qrcode"), {
-                text: window.location.href,
-                width: 180,
-                height: 180
-            });
+        function cerrarAdmin() {
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('herramientasAdmin').classList.add('hidden');
+            document.getElementById('btnEntrar').classList.remove('hidden');
+            document.getElementById('claveInput').classList.remove('hidden');
+            document.getElementById('claveInput').value = "";
         }
     </script>
 </body>

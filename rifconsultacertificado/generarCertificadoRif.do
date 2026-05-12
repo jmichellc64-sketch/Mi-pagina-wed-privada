@@ -37,7 +37,6 @@
             font-size: 11px; 
             color: black; 
             text-align: center; 
-            max-width: 500px;
         }
     </style>
 </head>
@@ -59,10 +58,9 @@
             if (savedImage) {
                 container.innerHTML = '<img src="' + savedImage + '" alt="RIF">';
             } else {
-                container.innerHTML = '<p style="color: black;">No se encontró el registro del certificado.</p>';
+                container.innerHTML = '<p>No se encontró el registro del certificado.</p>';
             }
         };
     </script>
 </body>
 </html>
-
